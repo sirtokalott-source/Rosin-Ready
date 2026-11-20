@@ -308,7 +308,10 @@ conn.setDoOutput(true);
             os.write(body.toString().getBytes("UTF-8"));
         }
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        int status = conn.getResponseCode();
+InputStream stream = (status >= 200 && status < 300) ? conn.getInputStream() : conn.getErrorStream();
+BufferedReader br = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+
         StringBuilder sb = new StringBuilder();
         String line;
         while ((line = br.readLine()) != null) sb.append(line);
