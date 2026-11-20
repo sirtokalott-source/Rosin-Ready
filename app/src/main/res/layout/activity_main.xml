@@ -113,7 +113,7 @@
                 android:id="@+id/btnBeginnerGuide"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="? Beginner's Guide"
+                android:text="Beginner's Guide"
                 android:textSize="12sp"
                 android:backgroundTint="#0277BD"
                 android:textColor="#FFFFFF" />
