@@ -271,13 +271,14 @@ public class MainActivity extends AppCompatActivity {
     private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
                                     String smell, String strain, double weight) throws Exception {
         String baseHost = "https://generativelanguage.googleapis.com";
-        String apiPath = "/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-        URL url = new URL(baseHost + apiPath);
+        String apiPath = "/v1beta/models/gemini-2.5-flash:generateContent";
+URL url = new URL(baseHost + apiPath);
 
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setDoOutput(true);
+HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+conn.setRequestMethod("POST");
+conn.setRequestProperty("Content-Type", "application/json");
+conn.setRequestProperty("x-goog-api-key", apiKey);
+conn.setDoOutput(true);
 
         String pastHistory = prefs.getString("calibrated_batches", "No past batches logged yet.");
         String strainRule = checkStrain
