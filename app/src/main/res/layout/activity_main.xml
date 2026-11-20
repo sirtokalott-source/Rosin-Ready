@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://android.com"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ROSIN READY"
+            android:textColor="#4CAF50"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etApiKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Paste Gemini API Key Here (Auto-Saved)"
+            android:inputType="textPassword"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#1E1E1E"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnWholeBud"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="+ Whole Bud Photo"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnSplitBud"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="+ Cross-Section Photo"
+                android:layout_marginStart="6dp"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="14dp">
+
+            <ImageView
+                android:id="@+id/ivWholeBud"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="#1E1E1E"
+                android:scaleType="centerCrop" />
+
+            <ImageView
+                android:id="@+id/ivSplitBud"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="#1E1E1E"
+                android:scaleType="centerCrop" />
+        </LinearLayout>
+        <CheckBox
+            android:id="@+id/cbVacPacked"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vac-Packed / Compressed (Discount outer shear)"
+            android:checked="true"
+            android:textColor="#E0E0E0"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <CheckBox
+                android:id="@+id/cbCanHydrate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="I Can Hydrate (Stone + 62% Pack)"
+                android:checked="false"
+                android:textColor="#81C784" />
+
+            <Button
+                android:id="@+id/btnBeginnerGuide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="? Beginner's Guide"
+                android:textSize="12sp"
+                android:backgroundTint="#0277BD"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Current Tactile Moisture State:"
+            android:textColor="#81C784"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rgMoisture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp">
+
+            <RadioButton
+                android:id="@+id/rbDry1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Totally dried out and brittle / crumbles"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dry and snaps apart"
+                android:checked="true"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dry, but still slight stickiness"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Some sticky resin, not up to prime 62% humidity"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Already at ~62% prime humidity (Springy / Stem bends and snaps)"
+                android:textColor="#E0E0E0" />
+        </RadioGroup>
+        <TextView
+            android:id="@+id/tvTerpLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Terpene Intensity: 3.0 - Reasonable terp smell, not waking neighbours"
+            android:textColor="#FFB74D"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/sbTerps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="40"
+            android:progress="20"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/etSmellProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Dominant Smell (e.g., Cheese, Gas, Citrus, Hay)"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#1E1E1E"
+            android:padding="12dp"
+            android:layout_marginBottom="10dp" />
+
+        <CheckBox
+            android:id="@+id/cbCheckStrain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Optional: Check Strain &amp; Bag Label Authenticity"
+            android:checked="false"
+            android:textColor="#90CAF9"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etClaimedStrain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Claimed Strain / Bag Label (Enabled when checked above)"
+            android:enabled="false"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#666666"
+            android:background="#1E1E1E"
+            android:padding="12dp"
+            android:layout_marginBottom="10dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="16dp">
+
+            <EditText
+                android:id="@+id/etWeight"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Weight (grams)"
+                android:inputType="numberDecimal"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="12dp"
+                android:layout_marginEnd="6dp" />
+
+            <EditText
+                android:id="@+id/etDiameter"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Avg Bud Width (mm)"
+                android:inputType="numberDecimal"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="12dp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btnRunAssessment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RUN PRESSING ASSESSMENT"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:backgroundTint="#388E3C"
+            android:textColor="#FFFFFF"
+            android:padding="14dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvResults"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#1E1E1E"
+            android:padding="14dp"
+            android:text="Load Whole Bud + Cross-Section photos and enter batch details to run assessment."
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="LOG ACTUAL PRESS RESULT"
+            android:textColor="#64B5F6"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enter your actual yields below. The engine logs and learns from your results to constantly calibrate and improve future predictions."
+            android:textColor="#AAAAAA"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+
+            <EditText
+                android:id="@+id/etVirginYield"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="1st Press Yield (g)"
+                android:inputType="numberDecimal"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp" />
+
+            <EditText
+                android:id="@+id/etSecondYield"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="2nd Press Yield (g)"
+                android:inputType="numberDecimal"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="10dp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etActualColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Actual Color &amp; Quality (e.g., Clean Golden, Amber, Dark)"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#1E1E1E"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/btnLogOutcome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE OUTCOME TO ENGINE MEMORY"
+            android:backgroundTint="#1976D2"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="32dp" />
+
+    </LinearLayout>
+</ScrollView>
