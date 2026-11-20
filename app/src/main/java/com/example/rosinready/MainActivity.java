@@ -270,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
                                     String smell, String strain, double weight) throws Exception {
-        String baseHost = "https://" + "://googleapis.com";
+        String baseHost = "https://" + "://generetivelanguage.googleapis.com";
         String apiPath = "/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
         URL url = new URL(baseHost + apiPath);
 
