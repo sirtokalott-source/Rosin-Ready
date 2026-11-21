@@ -285,6 +285,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (!canRunOnlineAi) {
             int offId = rgOfflineVisual.getCheckedRadioButtonId();
+            if (offId == -1) {
+    Toast.makeText(this, "Attach both photos (online) or select an Offline visual look", Toast.LENGTH_LONG).show();
+    return;
+}
+
             double gen = (offId == R.id.rbOffHigh) ? 8.5 : (offId == R.id.rbOffMed) ? 7.0 : 5.0;
             double post = (offId == R.id.rbOffHigh) ? 8.0 : (offId == R.id.rbOffMed) ? 6.8 : 5.0;
             String note = !isNetworkAvailable() ? "Offline mode active (no internet connection)." :
