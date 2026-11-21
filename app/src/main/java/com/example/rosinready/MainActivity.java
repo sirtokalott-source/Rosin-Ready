@@ -320,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
+        private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
                                     String smell, String strain, double weight) throws Exception {
         String baseHost = "https://" + "generativelanguage" + ".googleapis.com";
         String apiPath = "/v1beta/models/gemini-2.5-flash:generateContent";
@@ -380,7 +380,6 @@ public class MainActivity extends AppCompatActivity {
 
         return rawText.replace("```json", "").replace("```", "").trim();
     }
-
     private String processEngineMathAndBuildReport(String jsonStr, int moistureOpt, double terps,
                                                    double weight, double diameter, boolean canHydrate, boolean checkStrain) throws Exception {
         JSONObject data = new JSONObject(jsonStr);
@@ -441,3 +440,81 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (weight < 3.5 && terps >= 1.8 && genetic >= 6.0) {
+            pressSection += "\n• Weight Warning: Under 3.5g incurs noticeable fixed 37u filter-bag absorption (~0.15-0.20g).";
+        }
+
+        StringBuilder report = new StringBuilder();
+        report.append(String.format(Locale.US, "SUITABILITY SCORE: %.1f / 100\nVERDICT: %s\n\n", score, tier));
+        report.append(String.format(Locale.US,
+                "1. RESIN HEAD & CORE ANALYSIS:\n%s\n(Genetic Heads: %.1f/10 | Preservation: %.1f/10 | Structure: %.1f/10)\n\n",
+                data.getString("head_analysis"), genetic, postHarvest, structure));
+        report.append(pressSection);
+
+        if (checkStrain) {
+            report.append(String.format(Locale.US, "\n\n3. OPTIONAL STRAIN & LABEL CHECK [%s]:\n%s",
+                    data.getString("genetics_flag"), data.getString("genetics_notes")));
+        }
+        return report.toString();
+    }
+    private String buildHydrostoneGuide(double weightGrams, double diameterMm, int moistureOpt) {
+        double drynessFactor = (moistureOpt == 1) ? 1.25 : (moistureOpt == 2) ? 1.15 : 0.75;
+        double baseMinutes = 55.0 + (weightGrams * 13.9);
+        double sizeMultiplier = 0.875 + (diameterMm / 100.0);
+
+        int totalMinutes = (int) Math.round(baseMinutes * drynessFactor * sizeMultiplier);
+        totalMinutes = Math.max(30, Math.min(360, totalMinutes));
+
+        return String.format(Locale.US,
+                "• 500ml Jar Estimate: Isolated soaked RAW Hydrostone (on parchment/lid) for ~%d mins (%.1f hrs — can be split into 2 runs overnight), then remove stone (true headspace RH peaks ~68-68.5%%), shake gently, and seal with 62%% Boveda for 48 hrs.\n" +
+                "• Check & Roll Schedule: Inspect squish & rotate jar at ~%d mins (remove stone & hygrometer before shaking). During Boveda equalization, gently roll the jar every 12 hrs and check tactile feel at 24 hrs, then every 12 hrs after in case a short stone top-up is needed.\n" +
+                "• GUARDRAIL: Guides only—final readiness is strictly on the user via physical feel and stem bend-and-snap.",
+                totalMinutes, totalMinutes / 60.0, totalMinutes / 2);
+    }
+
+    private void savePressOutcome() {
+        String vYield = etVirginYield.getText().toString().trim();
+        String sYield = etSecondYield.getText().toString().trim();
+        String colorQual = etActualColor.getText().toString().trim();
+        String weight = etWeight.getText().toString().trim();
+        String smell = etSmellProfile.getText().toString().trim();
+        double terps = 1.0 + (sbTerps.getProgress() / 10.0);
+
+        if (vYield.isEmpty()) {
+            Toast.makeText(this, "Enter at least 1st Press Yield (g) to save", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String entry = String.format(Locale.US, "- Batch: %sg (%s, Terps %.1f/5) -> 1st: %sg, 2nd: %sg | Color/Quality: %s",
+                weight.isEmpty() ? "?" : weight, smell, terps, vYield, sYield.isEmpty() ? "0" : sYield, colorQual);
+
+        String existing = prefs.getString("calibrated_batches", "");
+        String[] lines = existing.split("\n");
+        StringBuilder updated = new StringBuilder(entry);
+        int count = 1;
+        for (String line : lines) {
+            if (!line.trim().isEmpty() && count < 50) {
+                updated.append("\n").append(line);
+                count++;
+            }
+        }
+        prefs.edit().putString("calibrated_batches", updated.toString()).apply();
+        Toast.makeText(this, "Saved! The engine is permanently training itself—future yield predictions are tailored to your personal feel, moisture, and smell ratings.", Toast.LENGTH_LONG).show();
+    }
+
+    private Bitmap scaleBitmap(Bitmap bmp, int maxDim) {
+        int w = bmp.getWidth(), h = bmp.getHeight();
+        if (w <= maxDim && h <= maxDim) return bmp;
+        float ratio = (float) w / h;
+        return Bitmap.createScaledBitmap(bmp, w > h ? maxDim : Math.round(maxDim * ratio), h > w ? maxDim : Math.round(maxDim / ratio), true);
+    }
+
+    private String encodeToBase64(Bitmap bmp) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+        return Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+    }
+
+    private double parseDoubleOrDefault(String text, double fallback) {
+        try { return Double.parseDouble(text.trim()); } catch (Exception e) { return fallback; }
+    }
+}
