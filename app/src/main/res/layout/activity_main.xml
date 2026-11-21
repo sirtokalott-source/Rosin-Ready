@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://android.com"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212"
@@ -44,7 +44,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tip: Setting up a free Gemini API key takes under a minute at ://google.com and unlocks Google AI vision to inspect your trichome photos directly. (No key or offline? Use the 3-option visual selector below)."
+                android:text="Tip: Setting up a free Gemini API key takes under a minute at ://aistudio.google.com and unlocks Google AI vision to inspect your trichome photos directly. (No key or offline? Use the 3-option visual selector below)."
                 android:textColor="#B0BEC5"
                 android:textSize="12sp"
                 android:layout_marginBottom="6dp" />
