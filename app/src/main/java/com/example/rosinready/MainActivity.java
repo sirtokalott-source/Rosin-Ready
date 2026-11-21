@@ -1,5 +1,4 @@
 package com.example.rosinready;
-
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -328,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
         private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
                                     String smell, String strain, double weight) throws Exception {
         String baseHost = "https://" + "generativelanguage" + ".googleapis.com";
-        String apiPath = "/v1beta/models/gemini-2.5-flash:generateContent";
+        String apiPath = "/v1beta/models/gemini-3.8-flash:generateContent";
         URL url = new URL(baseHost + apiPath);
 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
