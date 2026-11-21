@@ -150,3 +150,361 @@
                 android:text="Offline: Poor Frost / Dark or Degraded"
                 android:textColor="#E0E0E0" />
         </RadioGroup>
+        <CheckBox
+            android:id="@+id/cbVacPacked"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vac-Packed / Compressed (Discount outer shear)"
+            android:checked="true"
+            android:textColor="#E0E0E0"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <CheckBox
+                android:id="@+id/cbCanHydrate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="I Can Hydrate (Stone + 62% Pack)"
+                android:checked="false"
+                android:textColor="#81C784" />
+
+            <Button
+                android:id="@+id/btnBeginnerGuide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Beginner's Guide"
+                android:textSize="12sp"
+                android:backgroundTint="#0277BD"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Current Tactile Moisture State:"
+            android:textColor="#81C784"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rgMoisture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp">
+
+            <RadioButton
+                android:id="@+id/rbDry1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Totally dried out and brittle / crumbles"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dry and snaps apart"
+                android:checked="true"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dry, but still slight stickiness"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Some sticky resin, not up to prime 62% humidity"
+                android:textColor="#E0E0E0" />
+
+            <RadioButton
+                android:id="@+id/rbDry5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Already at ~62% prime humidity (Springy / Stem bends and snaps)"
+                android:textColor="#E0E0E0" />
+        </RadioGroup>
+        <TextView
+            android:id="@+id/tvTerpLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Terpene Intensity: 3.0 - Reasonable terp smell, not waking the neighbours"
+            android:textColor="#FFB74D"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/sbTerps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="40"
+            android:progress="20"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/etSmellProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Dominant Smell (e.g., Cheese, Gas, Citrus, Hay)"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#1E1E1E"
+            android:padding="12dp"
+            android:layout_marginBottom="10dp" />
+
+        <CheckBox
+            android:id="@+id/cbCheckStrain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Optional: Check Strain &amp; Bag Label Authenticity"
+            android:checked="false"
+            android:textColor="#90CAF9"
+            android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+            android:id="@+id/layoutStrainDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="10dp">
+
+            <EditText
+                android:id="@+id/etClaimedStrain"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Claimed Strain / Bag Label"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="12dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
+
+                <Button
+                    android:id="@+id/btnBagPhoto"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="+ Bag Photo"
+                    android:layout_marginEnd="8dp"
+                    android:backgroundTint="#1565C0"
+                    android:textColor="#FFFFFF" />
+
+                <ImageView
+                    android:id="@+id/ivBagPhoto"
+                    android:layout_width="110dp"
+                    android:layout_height="match_parent"
+                    android:background="#1E1E1E"
+                    android:scaleType="centerCrop" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tip: Tap Beginner's Guide above (Section 5) for how to spot fake Mylar bags—such as unsealed tops above the tear notch and pre-printed THC percentages."
+                android:textColor="#90CAF9"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="4dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Weight"
+                app:suffixText="g"
+                app:suffixTextColor="#81C784"
+                android:textColorHint="#888888"
+                android:layout_marginEnd="6dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etWeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColor="#FFFFFF"
+                    android:background="#1E1E1E" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Bud Width"
+                app:suffixText="mm"
+                app:suffixTextColor="#81C784"
+                android:textColorHint="#888888"
+                android:layout_marginStart="6dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDiameter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColor="#FFFFFF"
+                    android:background="#1E1E1E" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tip: Break buds down into roughly equal sizes so moisture equalizes evenly across the whole batch."
+            android:textColor="#B0BEC5"
+            android:textSize="12sp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnRunAssessment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RUN PRESSING ASSESSMENT"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:backgroundTint="#388E3C"
+            android:textColor="#FFFFFF"
+            android:padding="14dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvResults"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#1E1E1E"
+            android:padding="14dp"
+            android:text="Load photos (or pick offline visual look) and enter batch details to run assessment."
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginBottom="24dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="LOG ACTUAL PRESS RESULT"
+            android:textColor="#64B5F6"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enter your actual yields below. The engine logs and learns from your results to constantly calibrate and improve future predictions."
+            android:textColor="#AAAAAA"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="6dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="1st Press\nYield (grams)"
+                    android:textColor="#E0E0E0"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:suffixText="g"
+                    app:suffixTextColor="#81C784">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etVirginYield"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:textColor="#FFFFFF"
+                        android:background="#1E1E1E" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="2nd Press\nYield (grams)"
+                    android:textColor="#E0E0E0"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:suffixText="g"
+                    app:suffixTextColor="#81C784">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSecondYield"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:textColor="#FFFFFF"
+                        android:background="#1E1E1E" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etActualColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Actual Color &amp; Quality (e.g., Clean Golden, Amber, Dark)"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#1E1E1E"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/btnLogOutcome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE OUTCOME TO ENGINE MEMORY"
+            android:backgroundTint="#1976D2"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="32dp" />
+
+    </LinearLayout>
+</ScrollView>
