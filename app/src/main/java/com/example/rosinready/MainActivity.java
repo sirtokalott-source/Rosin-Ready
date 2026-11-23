@@ -1,4 +1,5 @@
 package com.example.rosinready;
+
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -24,14 +25,17 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
-    private LinearLayout layoutApiKeySection, layoutStrainDetails;
+    private LinearLayout layoutApiKeySection, layoutStrainDetails, layoutLoading;
     private EditText etApiKey, etSmellProfile, etClaimedStrain, etWeight, etDiameter;
     private EditText etVirginYield, etSecondYield, etActualColor;
     private CheckBox cbVacPacked, cbCanHydrate, cbCheckStrain;
@@ -39,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar sbTerps;
     private TextView tvTerpLabel, tvResults;
     private ImageView ivWholeBud, ivSplitBud, ivBagPhoto;
+    private Button btnRunAssessment;
 
     private String base64Whole = null;
     private String base64Split = null;
@@ -84,15 +89,17 @@ public class MainActivity extends AppCompatActivity {
         prefs = getSharedPreferences("RosinReadyPrefs", MODE_PRIVATE);
 
         if (!prefs.contains("calibrated_batches")) {
-            String seedBatch = "- Batch 1: 6.0g (Rehydrated vac-pack, Terps 2.4/5, yellow core) -> " +
-                    "1st (83C/800 bag PSI): 0.73g, 2nd (91C/1000 bag PSI): 0.27g | Clean golden 1st, dark 2nd.\n" +
-                    "- Batch 2: 6.4g (Rehydrated 10mm vac-pack, Terps 2.8/5) -> " +
-                    "1st (37u bag, 83C/800 bag PSI): 1.05g, 2nd (83C/1600 bag PSI): 0.20g | Clean golden both presses.";
+            String seedBatch =
+                    "- Batch 1: 6.0g (Rehydrated vac-pack, Terps 2.4/5, yellow core) -> 1st (83C/800 bag PSI): 0.73g, 2nd (91C/1000 bag PSI): 0.27g | Clean golden 1st, dark 2nd.\n" +
+                    "- Batch 2: 6.4g (Rehydrated 10mm vac-pack, Terps 2.8/5) -> 1st (37u bag, 83C/800 bag PSI): 1.05g, 2nd (83C/1600 bag PSI): 0.20g | Clean golden both presses.\n" +
+                    "- Batch 3: 5.8g (StarDawg, Boveda 62%, Terps 3.3/5) -> 1st (37u bag, ~80C/800 bag PSI, ~105-120s short cycle): 1.10g, 2nd (~1,000 bag PSI / 2,000 gauge PSI): 0.17g | Lovely golden translucent honey.\n" +
+                    "- Batch 4: 6.0g (StarDawg, Boveda 62%, Terps 3.3/5) -> 1st (37u bag, ~80C/800 bag PSI, ~105-120s short cycle): 1.12g, 2nd (~1,000 bag PSI / 2,000 gauge PSI): 0.17g | Clean golden-amber honey, cured into velvety golden badder.\n" +
+                    "- Batch 5: 13.0g split into two 6.5g bags (StarDawg, Boveda 62%, Terps 3.3/5) -> 1st (37u bag, ~80C/800 bag PSI): 2.30g, 2nd (~1,000 bag PSI / 2,000 gauge PSI): 0.47g | Thick golden-amber sap/batter.";
             prefs.edit().putString("calibrated_batches", seedBatch).apply();
         }
-
         layoutApiKeySection = findViewById(R.id.layoutApiKeySection);
         layoutStrainDetails = findViewById(R.id.layoutStrainDetails);
+        layoutLoading = findViewById(R.id.layoutLoading);
         etApiKey = findViewById(R.id.etApiKey);
         etSmellProfile = findViewById(R.id.etSmellProfile);
         etClaimedStrain = findViewById(R.id.etClaimedStrain);
@@ -114,6 +121,8 @@ public class MainActivity extends AppCompatActivity {
         ivWholeBud = findViewById(R.id.ivWholeBud);
         ivSplitBud = findViewById(R.id.ivSplitBud);
         ivBagPhoto = findViewById(R.id.ivBagPhoto);
+        btnRunAssessment = findViewById(R.id.btnRunAssessment);
+
         String savedKey = prefs.getString("gemini_api_key", "");
         etApiKey.setText(savedKey);
         if (!savedKey.isEmpty()) {
@@ -129,26 +138,73 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btnWholeBud).setOnClickListener(v -> {
-            pickingTarget = 1;
-            openGallery();
-        });
-
-        findViewById(R.id.btnSplitBud).setOnClickListener(v -> {
-            pickingTarget = 2;
-            openGallery();
-        });
-
-        findViewById(R.id.btnBagPhoto).setOnClickListener(v -> {
-            pickingTarget = 3;
-            openGallery();
-        });
-
+        findViewById(R.id.btnWholeBud).setOnClickListener(v -> { pickingTarget = 1; openGallery(); });
+        findViewById(R.id.btnSplitBud).setOnClickListener(v -> { pickingTarget = 2; openGallery(); });
+        findViewById(R.id.btnBagPhoto).setOnClickListener(v -> { pickingTarget = 3; openGallery(); });
         findViewById(R.id.btnBeginnerGuide).setOnClickListener(v -> showBeginnerGuide());
-        setupTerpSlider();
 
-        findViewById(R.id.btnRunAssessment).setOnClickListener(v -> runAssessment());
+        setupTerpSlider();
+        restoreBatchDraft();
+
+        btnRunAssessment.setOnClickListener(v -> runAssessment());
         findViewById(R.id.btnLogOutcome).setOnClickListener(v -> savePressOutcome());
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveBatchDraft();
+    }
+    private void saveBatchDraft() {
+        SharedPreferences.Editor ed = getSharedPreferences("RosinDraftPrefs", MODE_PRIVATE).edit();
+        ed.putString("weight", etWeight.getText().toString());
+        ed.putString("diameter", etDiameter.getText().toString());
+        ed.putInt("terpsProgress", sbTerps.getProgress());
+        ed.putString("smell", etSmellProfile.getText().toString());
+        ed.putInt("moistureId", rgMoisture.getCheckedRadioButtonId());
+        ed.putBoolean("vacPacked", cbVacPacked.isChecked());
+        ed.putBoolean("canHydrate", cbCanHydrate.isChecked());
+        ed.putBoolean("checkStrain", cbCheckStrain.isChecked());
+        ed.putString("claimedStrain", etClaimedStrain.getText().toString());
+        ed.putString("resultsText", tvResults.getText().toString());
+        ed.apply();
+    }
+
+    private void restoreBatchDraft() {
+        SharedPreferences d = getSharedPreferences("RosinDraftPrefs", MODE_PRIVATE);
+        if (!d.contains("weight")) return;
+        etWeight.setText(d.getString("weight", ""));
+        etDiameter.setText(d.getString("diameter", ""));
+        sbTerps.setProgress(d.getInt("terpsProgress", 20));
+        etSmellProfile.setText(d.getString("smell", ""));
+        int mId = d.getInt("moistureId", R.id.rbDry5);
+        if (mId != -1) rgMoisture.check(mId);
+        cbVacPacked.setChecked(d.getBoolean("vacPacked", true));
+        cbCanHydrate.setChecked(d.getBoolean("canHydrate", false));
+        boolean strainChecked = d.getBoolean("checkStrain", false);
+        cbCheckStrain.setChecked(strainChecked);
+        layoutStrainDetails.setVisibility(strainChecked ? View.VISIBLE : View.GONE);
+        etClaimedStrain.setText(d.getString("claimedStrain", ""));
+        String savedRes = d.getString("resultsText", "");
+        if (!savedRes.isEmpty()) tvResults.setText(savedRes);
+    }
+
+    private void clearBatchDraftAndInputs() {
+        getSharedPreferences("RosinDraftPrefs", MODE_PRIVATE).edit().clear().apply();
+        etWeight.setText("");
+        etDiameter.setText("");
+        sbTerps.setProgress(20);
+        etSmellProfile.setText("");
+        rgMoisture.check(R.id.rbDry5);
+        cbVacPacked.setChecked(true);
+        cbCanHydrate.setChecked(false);
+        cbCheckStrain.setChecked(false);
+        layoutStrainDetails.setVisibility(View.GONE);
+        etClaimedStrain.setText("");
+        etVirginYield.setText("");
+        etSecondYield.setText("");
+        etActualColor.setText("");
+        tvResults.setText("Load photos (or pick offline visual look) and enter batch details to run assessment.");
     }
     private void showBeginnerGuide() {
         Dialog dialog = new Dialog(this);
@@ -178,33 +234,42 @@ public class MainActivity extends AppCompatActivity {
         body.setPadding(0, 0, 12, 24);
         body.setText(
                 "IMPORTANT DISCLAIMER:\n" +
-                "All timers, temperatures, and pressures in this app are baseline guides for inexperienced users—never a substitute for physical feel, observation, and hands-on experience.\n\n" +
+                "All timers, temperatures, and pressures in this app are baseline guides—never a substitute for physical feel, visual flow observation, and hands-on experience.\n\n" +
                 "1. HYGROMETER CALIBRATION (READ THIS FIRST)\n" +
-                "• Digital vs. Analogue: A digital mini-hygrometer is recommended for accuracy and because there is no mechanical coil to stick, though the 68-68.5% true RH cutoff works for either.\n" +
-                "• Salt Calibration Test (If Using an Analogue Hygrometer): Place a bottle cap of table salt dampened with a few drops of water (wet sand texture, not dissolved) inside a sealed zip-lock bag or jar with your hygrometer for 12-24 hours at steady room temp. It creates an exact 75% RH environment—check the back of the dial for a small calibration screw to set the needle directly to 75%, or note the offset.\n\n" +
+                "• Digital vs. Analogue: A digital mini-hygrometer is recommended for accuracy, though the 68-68.5% true RH cutoff works for either.\n" +
+                "• Salt Calibration Test: Place a bottle cap of table salt dampened with a few drops of water (wet sand texture) inside a sealed jar with your hygrometer for 12-24 hours at steady room temp (75% RH).\n\n" +
                 "2. REHYDRATING DRY FLOWER (500ml JAR PROTOCOL)\n" +
-                "• Why Hydrate: Pressing dry bud (<54% RH) turns plant fiber into a sponge that traps oil inside the 37u bag.\n" +
-                "• Stone Isolation: Soak a RAW Hydrostone in distilled water and isolate it on parchment paper or inside a small jar lid inside a 500ml jar so wet terracotta NEVER touches flower directly.\n" +
-                "• Mid-Run Rotation (Cuts Core Wait in Half): Buds resting against the glass floor get zero vapor on their underside. At the halfway check, gently shake/roll the jar so dry glass-facing sides rotate up. WARNING: ALWAYS REMOVE THE HYDROSTONE AND HYGROMETER BEFORE SHAKING, then place them back in to finish.\n" +
-                "• Swapping to Boveda (48-Hour Standard & Check Schedule): Pull the stone (true headspace RH typically peaks around 68-68.5% RH), give one gentle shake before dropping in a 62% Boveda pack, and seal for 48 hours. Gently roll the jar every 12 hours to rotate glass-contact sides up. Check tactile feel at 24 hours and every 12 hours after—if buds still feel too dry, put the Hydrostone back in for a short top-up run. Hygrometers (especially analogue dials due to lag) are guides only; readiness is strictly on you to verify by feel and stem snap.\n" +
-                "• Two-Step Split Option: For bone-dry flower or cautious users, split the total Hydrostone time into two halves with an overnight sealed rest in between.\n" +
-                "• Golden Rule: Water cannot replace lost terpenes. If it smells like dead hay (Level 1), it is not suitable for pressing.\n\n" +
-                "3. HOW 62% RH FEELS ALL THE WAY THROUGH\n" +
-                "• Gold Standard Tool (~£15-£25): A 2-prong pin moisture meter pressed into a thick bud reads 10% to 12% internal moisture at true 62% RH.\n" +
-                "• Spring-Back Test: Gently squeeze a thicker bud. At 62% all through, it feels slightly soft and rebounds under gentle pressure. On dense vac-packed flower, a firmer squash compresses it slightly flatter permanently, but it should still bounce back softly from that compressed shape when pressed gently.\n" +
-                "• Stem Bend-and-Snap: Bend an inner stem near the base—at 62% core equilibrium, the stem bends and creases fibrously first, then snaps (not a brittle matchstick click).\n\n" +
-                "4. PRESSING PARAMETERS, RECOVERY & BAG PSI\n" +
-                "• Why 37u Micron Bags: A 37u bag is a tighter mesh than standard flower pressing, used intentionally to achieve absolute purity by blocking chlorophyll, plant lipids, and waxes from coming through so you get the cleanest possible rosin.\n" +
-                "• Short vs. Full Cycle Timing: For fresh, sticky, loud flower, use a fast ~105-120s cycle (30-45s pre-warm, 45s ramp, 20-30s hold max) to preserve color and terps. For drier/aged/rehydrated dense pucks, use a full ~300s cycle (90s pre-warm, 120s ramp, 90s hold).\n" +
-                "• Two-Tier 2nd Press Recovery: If your 1st press looks clean/golden but leaves oil behind, increase PRESSURE ONLY (from 800 up to 1,600 bag PSI) at the same temp (e.g., 83°C) to recover clean golden rosin. If the 1st press is already dark brown with a terrible yield, increase BOTH pressure (up to 1,600 bag PSI) and temp—use 91°C first (retains better taste), or up to 102°C max for stubborn material.\n" +
-                "• Thermal Ceilings (105°C Burnt Taste / 120°C Cannabinoids): Stay below 105°C to avoid adding a harsh burnt taste. Cannabinoids DO NOT degrade/burn out until ~120°C—so turning up to 91-102°C to rescue yield darkens color and reduces terpenes, while preserving cannabinoid potency.\n" +
-                "• Gauge PSI vs. Actual Bag (Puck) PSI: Gauge readings vary across different presses depending on hydraulic ram piston size. Calculate actual puck pressure using: Total Ram Force = Gauge PSI × Piston Area (π × piston radius²), then Bag PSI = Total Ram Force ÷ Pressed Puck Area (π × puck radius²). For example, on a standard 7-ton press (~1.5\" ram piston = ~1.77 sq in) pressing a ~2.1\" bottle-tech puck (~3.5 sq in), 1,600 gauge PSI = ~800 bag PSI, and 3,200 gauge PSI = ~1,600 bag PSI.\n\n" +
-                "5. POST-PRESS CURING & PACKAGING WARNING\n" +
-                "• Cold Cure (Loud Terps 3.5+): Seal in glass at room temp (18-20°C) for 24-48 hrs and whip.\n" +
-                "• Warm-Plate Cure (Borderline Terps 2.0-2.5): Seal in glass on a 38°C plate for 2-6 hrs until cloudy, cool, and give a gentle fold (do not whip hard) to nucleate into smooth, non-harsh golden pate budder.\n" +
-                "• Mylar Bag Warning: Ignore 'Cali' Mylar bag art and printed THC numbers—authentic packs are heat-sealed above the tear notch with separate thermal UID stickers."
+                "• Stone Isolation: Soak a RAW Hydrostone in distilled water and isolate it on parchment or inside a small lid so wet terracotta NEVER touches flower.\n" +
+                "• Mid-Run Rotation: Remove Hydrostone & hygrometer first, gently shake/roll the jar halfway through so glass-facing sides rotate up, then return stone.\n" +
+                "• Swapping to Boveda: Pull stone at ~68-68.5% RH, drop in a 62% Boveda pack, and seal 48 hours (rolling jar every 12 hrs). Golden Rule: Water cannot replace lost terpenes (Level 1 hay is unsuitable).\n\n"
         );
-        scroll.addView(body);
+        TextView body2 = new TextView(this);
+        body2.setTextColor(0xFFEEEEEE);
+        body2.setTextSize(15f);
+        body2.setLineSpacing(10f, 1.25f);
+        body2.setPadding(0, 0, 12, 24);
+        body2.setText(
+                "3. HOW 62% RH FEELS ALL THE WAY THROUGH\n" +
+                "• Pin Moisture Meter: 10% to 12% internal moisture.\n" +
+                "• Spring-Back & Stem Snap: Bud rebounds gently under squeeze; inner stem creases fibrously before snapping.\n\n" +
+                "4. PRESSING PARAMETERS, FLOW CUTOFF & 2ND PRESS\n" +
+                "• Why 37u Micron Bags: Tighter mesh blocks chlorophyll, lipids, and waxes for maximum purity.\n" +
+                "• Visual Flow Cutoff + 30-45s Hold Rule: Watch bag edges—once oil stops actively running out, hold 30-45s max and lift plates (cuts combined ramp + hold ~1 min shorter on fresh, sticky flower).\n" +
+                "• Golden 2nd-Press Pressure Rule: For clean gold 2nd press, use ~2,000 gauge PSI (~1,000 bag PSI) at the SAME temp as 1st press. Use ~3,200 gauge PSI (~1,600 bag PSI) + 91-102°C heat ONLY for dark/low-yield rescues.\n" +
+                "• Thermal Ceilings: Stay below 105°C to prevent burnt taste; cannabinoids stay intact until ~120°C.\n\n" +
+                "5. POST-PRESS CURING GUIDE & PACKAGING\n" +
+                "• Cold Cure (24-48 hr @ 18-20°C): Seal in glass at cool room temp for 24-48 hrs until nucleation clouds the rosin, then gently fold.\n" +
+                "• Soft Wet Badder (2.0-2.5 hr @ 38°C): Warm cure on heat plate/mat for 2.0-2.5 hrs, lift off, and whip/whack vigorously for glossy wet badder.\n" +
+                "• Firmer Easy-Handling Budder (3.0-3.5 hr @ 38°C): Warm cure 3.0-3.5 hrs, move to cooling plate, and DO NOT whip—knead/fold only for stable budder.\n" +
+                "• Dark UV Glass Pot & Cooldown: Cure in a dark UV-protected glass pot (or blind-wrapped jar) using a 2.5-3 hr blind timer, followed by a mandatory 45-60 min sealed cooldown before opening.\n" +
+                "• Mylar Warning: Ignore 'Cali' Mylar bag graphics—authentic packs are heat-sealed above the tear notch with separate thermal UID stickers."
+        );
+
+        LinearLayout guideContent = new LinearLayout(this);
+        guideContent.setOrientation(LinearLayout.VERTICAL);
+        guideContent.addView(body);
+        guideContent.addView(body2);
+        scroll.addView(guideContent);
         root.addView(scroll);
 
         Button closeBtn = new Button(this);
@@ -263,6 +328,10 @@ public class MainActivity extends AppCompatActivity {
         imagePickerLauncher.launch(intent);
     }
 
+    private void setAnalyzingState(boolean running) {
+        layoutLoading.setVisibility(running ? View.VISIBLE : View.GONE);
+        btnRunAssessment.setEnabled(!running);
+    }
     private void runAssessment() {
         String apiKey = etApiKey.getText().toString().trim();
         if (!apiKey.isEmpty()) {
@@ -281,198 +350,192 @@ public class MainActivity extends AppCompatActivity {
         double diameter = parseDoubleOrDefault(etDiameter.getText().toString(), 15.0);
 
         boolean canRunOnlineAi = isNetworkAvailable() && !apiKey.isEmpty() && base64Whole != null && base64Split != null;
-
         if (!canRunOnlineAi) {
-            int offId = rgOfflineVisual.getCheckedRadioButtonId();
-            if (offId == -1) {
-    Toast.makeText(this, "Attach both photos (online) or select an Offline visual look", Toast.LENGTH_LONG).show();
-    return;
-}
-
-            double gen = (offId == R.id.rbOffHigh) ? 8.5 : (offId == R.id.rbOffMed) ? 7.0 : 5.0;
-            double post = (offId == R.id.rbOffHigh) ? 8.0 : (offId == R.id.rbOffMed) ? 6.8 : 5.0;
-            String note = !isNetworkAvailable() ? "Offline mode active (no internet connection)." :
-                          apiKey.isEmpty() ? "Offline visual fallback used (enter Gemini API key above for AI photo scan)." :
-                          "Offline visual fallback used (attach both Whole Bud & Inner Core photos for AI scan).";
-            try {
-                JSONObject fallbackJson = new JSONObject()
-                        .put("genetic_head_score", gen)
-                        .put("post_harvest_score", post)
-                        .put("structure_score", 7.8)
-                        .put("head_analysis", note + " Visual trichome tier selected manually.")
-                        .put("genetics_flag", checkStrain ? "OFFLINE_SKIPPED" : "SKIPPED")
-                        .put("genetics_notes", "Internet connection and photos required for AI strain & bag inspection.");
-                tvResults.setText(processEngineMathAndBuildReport(fallbackJson.toString(), moistureOpt, terps, weight, diameter, canHydrate, checkStrain));
-            } catch (Exception e) {
-                tvResults.setText("Error: " + e.getMessage());
-            }
+            runOfflineFallback(moistureOpt, terps, weight, diameter, canHydrate, checkStrain,
+                    !isNetworkAvailable() ? "Offline mode active (no internet connection)." :
+                    apiKey.isEmpty() ? "Offline visual fallback used (enter Gemini API key above for AI photo scan)." :
+                    "Offline visual fallback used (attach both Whole Bud & Inner Core photos for AI scan).");
             return;
         }
 
-        tvResults.setText("Analyzing trichome heads, core oxidation, and press physics...");
+        setAnalyzingState(true);
+        tvResults.setText("Analyzing trichome heads, core oxidation, and press physics... Please wait 1–2 mins.");
 
         executor.execute(() -> {
             try {
                 String responseText = callGeminiVision(apiKey, moistureOpt, terps, isVacPacked, checkStrain, smell, strain, weight);
                 String finalReport = processEngineMathAndBuildReport(responseText, moistureOpt, terps, weight, diameter, canHydrate, checkStrain);
-                runOnUiThread(() -> tvResults.setText(finalReport));
+                runOnUiThread(() -> {
+                    setAnalyzingState(false);
+                    tvResults.setText(finalReport);
+                    saveBatchDraft();
+                });
+            } catch (GeminiHttpException ghe) {
+                runOnUiThread(() -> {
+                    setAnalyzingState(false);
+                    boolean isAuthErr = (ghe.code == 400 || ghe.code == 401 || ghe.code == 403)
+                            || (ghe.body != null && ghe.body.contains("API_KEY"));
+                    if (isAuthErr) {
+                        layoutApiKeySection.setVisibility(View.VISIBLE);
+                        tvResults.setText("API Key rejected (HTTP " + ghe.code + "). Check your key above.");
+                    } else {
+                        layoutApiKeySection.setVisibility(View.GONE);
+                        tvResults.setText("Gemini server busy (HTTP " + ghe.code + "). Your API key is safe—tap Run Assessment again.");
+                    }
+                    saveBatchDraft();
+                });
             } catch (Exception e) {
                 runOnUiThread(() -> {
-                    layoutApiKeySection.setVisibility(View.VISIBLE);
-                    tvResults.setText("AI Error (Check API Key above): " + e.getMessage());
+                    setAnalyzingState(false);
+                    layoutApiKeySection.setVisibility(View.GONE);
+                    if (e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof IOException) {
+                        runOfflineFallback(moistureOpt, terps, weight, diameter, canHydrate, checkStrain,
+                                "DNS / Wi-Fi drop detected—automatically switched to Offline Visual Selector.");
+                    } else {
+                        tvResults.setText("Scan interrupted: " + e.getMessage());
+                        saveBatchDraft();
+                    }
                 });
             }
         });
     }
-        private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
+
+    private void runOfflineFallback(int moistureOpt, double terps, double weight, double diameter,
+                                    boolean canHydrate, boolean checkStrain, String reasonNote) {
+        int offId = rgOfflineVisual.getCheckedRadioButtonId();
+        if (offId == -1) {
+            rgOfflineVisual.check(R.id.rbOffMed);
+            offId = R.id.rbOffMed;
+        }
+        double gen = (offId == R.id.rbOffHigh) ? 8.5 : (offId == R.id.rbOffMed) ? 7.0 : 5.0;
+        double post = (offId == R.id.rbOffHigh) ? 8.0 : (offId == R.id.rbOffMed) ? 6.8 : 5.0;
+        try {
+            JSONObject fallbackJson = new JSONObject()
+                    .put("genetic_head_score", gen)
+                    .put("post_harvest_score", post)
+                    .put("structure_score", 7.8)
+                    .put("head_analysis", reasonNote + " Visual trichome tier applied.")
+                    .put("genetics_flag", checkStrain ? "OFFLINE_SKIPPED" : "SKIPPED")
+                    .put("genetics_notes", "Internet connection and photos required for AI strain & bag inspection.");
+            tvResults.setText(processEngineMathAndBuildReport(fallbackJson.toString(), moistureOpt, terps, weight, diameter, canHydrate, checkStrain));
+            saveBatchDraft();
+        } catch (Exception e) {
+            tvResults.setText("Offline error: " + e.getMessage());
+        }
+    }
+    private static class GeminiHttpException extends Exception {
+        final int code;
+        final String body;
+        GeminiHttpException(int code, String body) { super("HTTP " + code); this.code = code; this.body = body; }
+    }
+
+    private String callGeminiVision(String apiKey, int moistureOpt, double terps, boolean isVac, boolean checkStrain,
                                     String smell, String strain, double weight) throws Exception {
-        String baseHost = "https://" + "generativelanguage" + ".googleapis.com";
+        String baseHost = "https://" + "generativelanguage." + "googleapis.com";
         String apiPath = "/v1beta/models/gemini-3.8-flash:generateContent";
         URL url = new URL(baseHost + apiPath);
 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
+        conn.setConnectTimeout(25000);
+        conn.setReadTimeout(120000);
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("x-goog-api-key", apiKey);
         conn.setDoOutput(true);
 
-        String pastHistory = prefs.getString("calibrated_batches", "No past batches logged yet.");
-        String bagNote = (base64Bag != null) ? "Image 3 is the Mylar bag/packaging photo—inspect heat-seal above tear notch and THC compliance stickers." : "No bag photo attached.";
-        String strainRule = checkStrain
-                ? "3. OPTIONAL STRAIN CHECK ACTIVE: Cross-check ClaimedStrain='" + strain + "' against Whole Bud photo morphology AND Smell='" + smell + "'. " + bagNote + " " +
-                  "State confidence level (Low/Moderate/High Confidence) and note counterfeit Mylar bag tells."
-                : "3. OPTIONAL STRAIN CHECK DISABLED: Set genetics_flag to 'SKIPPED' and genetics_notes to 'Skipped.'";
+        String history = prefs.getString("calibrated_batches", "");
+        String prompt = "You are a solventless flower rosin press analyst. Inspect the Whole Bud and Inner Core photos. " +
+                "Return ONLY valid JSON with keys: genetic_head_score (1-10), post_harvest_score (1-10), structure_score (1-10), " +
+                "head_analysis (string), genetics_flag (string), genetics_notes (string). " +
+                "Context: Weight=" + weight + "g, MoistureTier=" + moistureOpt + "/5, Terps=" + terps + "/5, VacPacked=" + isVac +
+                ", Smell=" + smell + ", CheckStrain=" + checkStrain + ", ClaimedStrain=" + strain + ".\nCalibrated History:\n" + history;
 
-        String prompt = "You are an empirical botanical resin-assessment engine for rosin extraction. " +
-                "Image 1 is the whole exterior bud. Image 2 is the broken inner core cross-section.\n" +
-                "Inputs: VacPacked=" + isVac + ", MoistureOption=" + moistureOpt + "/5, Terps=" + terps + "/5, Smell='" + smell + "', Weight=" + weight + "g.\n" +
-                "Verified Past User Press History (Engine permanently trains itself on these logged outcomes):\n" + pastHistory + "\n\n" +
-                "RULES:\n" +
-                "1. Separate GENETIC_HEAD_SCORE (0-10: trichome density, bulbous head-to-stalk ratio, maturity) from " +
-                "POST_HARVEST_SCORE (0-10: interior core oxidation/browning; if VacPacked=true, discount outer flattening and grade interior head survival).\n" +
-                "2. Score STRUCTURE_SCORE (0-10: calyx density, low excess leaf, clean stem).\n" + strainRule + "\n" +
-                "Return ONLY valid JSON: {\"genetic_head_score\": 8.5, \"post_harvest_score\": 7.0, \"structure_score\": 8.0, " +
-                "\"head_analysis\": \"...\", \"genetics_flag\": \"VERIFIED_CONSISTENT | SUSPECT_MISMATCH | SKIPPED\", \"genetics_notes\": \"...\"}";
-
-        JSONArray parts = new JSONArray()
-                .put(new JSONObject().put("text", prompt))
-                .put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", base64Whole)))
-                .put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", base64Split)));
+        JSONArray parts = new JSONArray().put(new JSONObject().put("text", prompt));
+        parts.put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", base64Whole)));
+        parts.put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", base64Split)));
         if (checkStrain && base64Bag != null) {
             parts.put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", base64Bag)));
         }
-        JSONObject body = new JSONObject().put("contents", new JSONArray().put(new JSONObject().put("parts", parts)));
 
+        JSONObject payload = new JSONObject().put("contents", new JSONArray().put(new JSONObject().put("parts", parts)));
         try (OutputStream os = conn.getOutputStream()) {
-            os.write(body.toString().getBytes("UTF-8"));
+            os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
         }
 
-        int status = conn.getResponseCode();
-        InputStream stream = (status >= 200 && status < 300) ? conn.getInputStream() : conn.getErrorStream();
-        BufferedReader br = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+        int code = conn.getResponseCode();
+        InputStream stream = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+        BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         String line;
         while ((line = br.readLine()) != null) sb.append(line);
         br.close();
 
+        if (code < 200 || code >= 300) throw new GeminiHttpException(code, sb.toString());
+
         JSONObject root = new JSONObject(sb.toString());
-        if (!root.has("candidates")) {
-            throw new Exception(sb.toString());
-        }
         String rawText = root.getJSONArray("candidates").getJSONObject(0)
                 .getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text");
-
         return rawText.replace("```json", "").replace("```", "").trim();
     }
-    private String processEngineMathAndBuildReport(String jsonStr, int moistureOpt, double terps,
-                                                   double weight, double diameter, boolean canHydrate, boolean checkStrain) throws Exception {
-        JSONObject data = new JSONObject(jsonStr);
-        double genetic = data.getDouble("genetic_head_score");
-        double postHarvest = data.getDouble("post_harvest_score");
-        double structure = data.getDouble("structure_score");
-
-        double rawMoistureScore = (moistureOpt == 1) ? 1.0 : (moistureOpt == 2) ? 1.5 : (moistureOpt == 3) ? 2.1 : (moistureOpt == 4) ? 2.6 : 3.0;
-        double effectiveMoisture = (moistureOpt <= 4 && canHydrate && terps >= 2.8) ? 2.9 : rawMoistureScore;
+    private String processEngineMathAndBuildReport(String jsonStr, int moistureOpt, double terps, double weight,
+                                                   double diameter, boolean canHydrate, boolean checkStrain) throws Exception {
+        JSONObject j = new JSONObject(jsonStr);
+        double genetic = j.optDouble("genetic_head_score", 7.0);
+        double postHarvest = j.optDouble("post_harvest_score", 7.0);
+        double structure = j.optDouble("structure_score", 7.5);
+        String headAnalysis = j.optString("head_analysis", "");
+        double effectiveMoisture = (moistureOpt < 4 && canHydrate) ? 4.8 : moistureOpt;
 
         double score = ((genetic / 10.0) * 25.0) + ((postHarvest / 10.0) * 25.0) +
                        ((structure / 10.0) * 10.0) + ((effectiveMoisture / 5.0) * 25.0) + ((terps / 5.0) * 15.0);
 
-        String tier;
-        String pressSection;
-        String cycleTiming = (terps >= 3.2 && moistureOpt >= 4)
-                ? "Short Cycle (~105-120s total: 30-45s pre-warm, 45s ramp, 20-30s hold max to preserve bright golden color & loud terps)"
-                : "Full Cycle (~300s total: 90s pre-warm, 120s slow ramp, 90s hold for dense/rehydrated cores)";
+        String tier, pressSection;
+        boolean freshSticky = (terps >= 3.2 && moistureOpt >= 4);
+        String cycleTiming = freshSticky
+                ? "Short Cycle (~105-120s total: 30-45s pre-warm, 45s ramp, 30-45s hold max once oil stops running out — ~1 min shorter combined ramp + hold for fresh/sticky flower)"
+                : "Full Cycle (~300s total: 90s pre-warm, 120s slow ramp, 30-45s hold after visual oil flow stops)";
 
         if (terps < 1.8) {
             score = Math.min(score, 55.0);
             tier = "NOT SUITABLE FOR PRESSING — VISCOSITY LOCK";
-            pressSection = "2. VERDICT & CUTOFF REASON:\nNot suitable for pressing. Monoterpenes are gone (hay). Do NOT rehydrate for pressing; adding water without terpene solvents yields dark, sluggish oil trapped inside the 37u bag.";
+            pressSection = "2. VERDICT & CUTOFF:\nMonoterpenes gone (hay). Do NOT rehydrate for pressing; oil locks inside the 37u bag.";
         } else if (genetic < 6.0) {
             score = Math.min(score, 58.0);
             tier = "NOT SUITABLE FOR PRESSING — POOR TRICHOME HEADS";
-            pressSection = "2. VERDICT & CUTOFF REASON:\nNot suitable for pressing. Insufficient intact resin heads to overcome fixed 37u filter-bag absorption (~0.15-0.20g), resulting in near-zero return.";
+            pressSection = "2. VERDICT & CUTOFF:\nInsufficient intact resin heads to overcome fixed 37u filter-bag absorption (~0.15-0.20g).";
         } else if (terps < 2.8) {
             tier = "BORDERLINE — FLAVOUR, CONSISTENCY & YIELD";
-            pressSection = "2. VERDICT & GUIDANCE:\nTerpene intensity is in the Level 2 zone. Expect borderline results on flavour, consistency, and yield.";
+            pressSection = "2. VERDICT & GUIDANCE:\nLevel 2 terpene zone. Expect borderline flavour, consistency, and yield.";
+        } else if (moistureOpt <= 2 && !canHydrate) {
+            score = Math.min(score, 62.0);
+            tier = "NOT SUITABLE AS-IS — CELLULOSE SPONGE LOSS";
+            pressSection = "2. VERDICT & CUTOFF:\nDry (<54% RH) without hydration traps oil in plant fiber. Hydrate to 62% RH first.";
         } else {
-            if ((moistureOpt == 1 || moistureOpt == 2) && !canHydrate) {
-                score = Math.min(score, 62.0);
-                tier = "NOT SUITABLE AS-IS — CELLULOSE SPONGE LOSS";
-                pressSection = "2. VERDICT & CUTOFF REASON:\nNot suitable for pressing dry (<54% RH) with 'I Can Hydrate' unchecked. Pressing now traps oil inside dry plant fiber (~5-6% blowout yield). Hydrate to 62% RH first.";
-            } else if (moistureOpt == 3 && !canHydrate) {
-                score = Math.min(score, 68.0);
-                tier = "SUBSTANDARD — DIMINISHED RETURN WARNING";
-                pressSection = "2. VERDICT & GUIDANCE:\nFlower is still dry despite slight stickiness. Returns will be diminished—possibly quite badly—due to partial sponge absorption. Hydrating up to 62% RH first is recommended.";
-            } else if (moistureOpt == 4) {
-                tier = score >= 75.0 ? "SUITABLE FOR PRESSING (BOVEDA 62% TOP-UP)" : "RECOVERABLE PRESS (BOVEDA 62% TOP-UP)";
-                pressSection = String.format(Locale.US,
-                        "2. HYDRATION & PRESS PARAMETERS:\n• Boveda-Only Rule: Because flower already holds sticky resin, use 62%% Boveda packs ONLY for 24-48 hrs (NO Hydrostone needed).\n" +
-                        "• Bag, Temp & Timing: 37u micron bag (a tighter mesh used intentionally for absolute purity to block chlorophyll, lipids, and waxes) | 77-80C at ~800 bag PSI | %s -> Est. %.2fg - %.2fg single-press yield (<=0.1g left for 2nd press).",
-                        cycleTiming, weight * 0.19, weight * 0.25);
-            } else {
-                boolean needsStone = (moistureOpt <= 3);
-                tier = (score >= 75.0) ? (needsStone ? "SUITABLE FOR PRESSING (HYDRATE FIRST)" : "SUITABLE FOR PRESSING — PRIME SINGLE-PRESS")
-                                       : (needsStone ? "DIMINISHED / RECOVERABLE PRESS (HYDRATE FIRST)" : "DIMINISHED / RECOVERABLE PRESS");
-                String hydrationPlan = needsStone ? buildHydrostoneGuide(weight, diameter, moistureOpt) : "• Moisture: Optimal (~62% RH). Ready to press immediately.";
-                pressSection = String.format(Locale.US,
-                        "2. HYDRATION & PRESS PARAMETERS:\n%s\n" +
-                        "• Bag, Temp & Timing: 37u micron bag (a tighter mesh used intentionally for absolute purity to block chlorophyll, lipids, and waxes) | 77-80C (loud fresh) or 81-83C (aged/yellow core) at ~800 bag PSI | %s -> Est. %.2fg - %.2fg virgin yield.\n" +
-                        "• 2nd Press Recovery: If 1st press is clean gold, increase PRESSURE ONLY (from 800 up to 1,600 bag PSI; e.g., ~1,600 to ~3,200 gauge PSI on a 7-ton press, though gauge readings vary by ram piston size) at the same temp (e.g., 83C). If 1st press is dark brown with a terrible yield, increase BOTH pressure (up to 1,600 bag PSI) and temp to 91C (keeps better taste) or up to 102C max (stay below 105C burnt taste; cannabinoids do not degrade until ~120C).\n" +
-                        "• Post-Press Cure: Cold cure loud terps (24-48h) or warm-plate borderline pull-and-snap at 38C (2-6h) + gentle fold into golden pate budder.",
-                        hydrationPlan, cycleTiming, weight * 0.16, weight * 0.24);
-            }
+            tier = score >= 78.0 ? "PRIME FOR PRESSING — HIGH-GRADE ROSIN CANDIDATE" : "GOOD TO PRESS — SOLID EXTRACTION";
+            pressSection = "2. VERDICT & GUIDANCE:\nReady for 37u bottle-tech press. Break buds evenly (" + String.format(Locale.US, "%.0f", diameter) + "mm target).";
         }
 
-        if (weight < 3.5 && terps >= 1.8 && genetic >= 6.0) {
-            pressSection += "\n• Weight Warning: Under 3.5g incurs noticeable fixed 37u filter-bag absorption (~0.15-0.20g).";
-        }
+        double estPct = Math.max(6.0, Math.min(26.0, (score / 100.0) * 24.5));
+        double estGrams = weight * (estPct / 100.0);
 
-        StringBuilder report = new StringBuilder();
-        report.append(String.format(Locale.US, "SUITABILITY SCORE: %.1f / 100\nVERDICT: %s\n\n", score, tier));
-        report.append(String.format(Locale.US,
-                "1. RESIN HEAD & CORE ANALYSIS:\n%s\n(Genetic Heads: %.1f/10 | Preservation: %.1f/10 | Structure: %.1f/10)\n\n",
-                data.getString("head_analysis"), genetic, postHarvest, structure));
-        report.append(pressSection);
-
+        StringBuilder out = new StringBuilder();
+        out.append(String.format(Locale.US, "1. READINESS SCORE: %.0f/100\n%s\n%s\n\n", score, tier, headAnalysis));
+        out.append(pressSection).append("\n\n");
+        out.append(String.format(Locale.US, "3. PREDICTED TOTAL YIELD:\n~%.2fg (%.1f%% on %.1fg input)\n\n", estGrams, estPct, weight));
+        out.append("4. PRESS PROTOCOL & 2ND PRESS RULE:\n")
+           .append("• 1st Press: 37u bag, ~80-83°C, ~800 bag PSI (~1,600 gauge PSI).\n")
+           .append("• Visual Flow Cutoff: ").append(cycleTiming).append("\n")
+           .append("• Golden 2nd Press: ~2,000 gauge PSI (~1,000 bag PSI) at SAME temp for clean gold. Use ~3,200 gauge PSI (~1,600 bag PSI) + 91-102°C heat ONLY for dark/low-yield rescues.\n\n");
+        out.append("5. POST-PRESS CURING GUIDE:\n")
+           .append("• Cold Cure (24-48 hr @ 18-20°C): Seal in glass at room temp until cloudy, then gently fold.\n")
+           .append("• Soft Wet Badder (2.0-2.5 hr @ 38°C): Warm cure 2.0-2.5 hrs, lift off, and whip/whack for glossy wet badder.\n")
+           .append("• Firmer Budder (3.0-3.5 hr @ 38°C): Warm cure 3.0-3.5 hrs, move to cooling plate, DO NOT whip—knead/fold only.\n")
+           .append("• UV Jar & Cooldown: Use a dark UV glass pot with a 2.5-3 hr blind timer + mandatory 45-60 min sealed cooldown.");
         if (checkStrain) {
-            report.append(String.format(Locale.US, "\n\n3. OPTIONAL STRAIN & LABEL CHECK [%s]:\n%s",
-                    data.getString("genetics_flag"), data.getString("genetics_notes")));
+            out.append("\n\n6. STRAIN / PACKAGING CHECK:\n").append(j.optString("genetics_flag", "CHECKED"))
+               .append(": ").append(j.optString("genetics_notes", ""));
         }
-        return report.toString();
-    }
-    private String buildHydrostoneGuide(double weightGrams, double diameterMm, int moistureOpt) {
-        double drynessFactor = (moistureOpt == 1) ? 1.25 : (moistureOpt == 2) ? 1.15 : 0.75;
-        double baseMinutes = 55.0 + (weightGrams * 13.9);
-        double sizeMultiplier = 0.875 + (diameterMm / 100.0);
-
-        int totalMinutes = (int) Math.round(baseMinutes * drynessFactor * sizeMultiplier);
-        totalMinutes = Math.max(30, Math.min(360, totalMinutes));
-
-        return String.format(Locale.US,
-                "• 500ml Jar Estimate: Isolated soaked RAW Hydrostone (on parchment/lid) for ~%d mins (%.1f hrs — can be split into 2 runs overnight), then remove stone (true headspace RH peaks ~68-68.5%%), shake gently, and seal with 62%% Boveda for 48 hrs.\n" +
-                "• Check & Roll Schedule: Inspect squish & rotate jar at ~%d mins (remove stone & hygrometer before shaking). During Boveda equalization, gently roll the jar every 12 hrs and check tactile feel at 24 hrs, then every 12 hrs after in case a short stone top-up is needed.\n" +
-                "• GUARDRAIL: Guides only—final readiness is strictly on the user via physical feel and stem bend-and-snap.",
-                totalMinutes, totalMinutes / 60.0, totalMinutes / 2);
+        return out.toString();
     }
 
     private void savePressOutcome() {
@@ -502,7 +565,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         prefs.edit().putString("calibrated_batches", updated.toString()).apply();
-        Toast.makeText(this, "Saved! The engine is permanently training itself—future yield predictions are tailored to your personal feel, moisture, and smell ratings.", Toast.LENGTH_LONG).show();
+        clearBatchDraftAndInputs();
+        Toast.makeText(this, "Saved to engine memory & batch form cleared!", Toast.LENGTH_LONG).show();
     }
 
     private Bitmap scaleBitmap(Bitmap bmp, int maxDim) {
