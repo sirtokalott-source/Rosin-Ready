@@ -241,14 +241,7 @@ public class MainActivity extends AppCompatActivity {
                 "2. REHYDRATING DRY FLOWER (500ml JAR PROTOCOL)\n" +
                 "• Stone Isolation: Soak a RAW Hydrostone in distilled water and isolate it on parchment or inside a small lid so wet terracotta NEVER touches flower.\n" +
                 "• Mid-Run Rotation: Remove Hydrostone & hygrometer first, gently shake/roll the jar halfway through so glass-facing sides rotate up, then return stone.\n" +
-                "• Swapping to Boveda: Pull stone at ~68-68.5% RH, drop in a 62% Boveda pack, and seal 48 hours (rolling jar every 12 hrs). Golden Rule: Water cannot replace lost terpenes (Level 1 hay is unsuitable).\n\n"
-        );
-        TextView body2 = new TextView(this);
-        body2.setTextColor(0xFFEEEEEE);
-        body2.setTextSize(15f);
-        body2.setLineSpacing(10f, 1.25f);
-        body2.setPadding(0, 0, 12, 24);
-        body2.setText(
+                "• Swapping to Boveda: Pull stone at ~68-68.5% RH, drop in a 62% Boveda pack, and seal 48 hours (rolling jar every 12 hrs). Golden Rule: Water cannot replace lost terpenes (Level 1 hay is unsuitable).\n\n" +
                 "3. HOW 62% RH FEELS ALL THE WAY THROUGH\n" +
                 "• Pin Moisture Meter: 10% to 12% internal moisture.\n" +
                 "• Spring-Back & Stem Snap: Bud rebounds gently under squeeze; inner stem creases fibrously before snapping.\n\n" +
@@ -264,12 +257,7 @@ public class MainActivity extends AppCompatActivity {
                 "• Dark UV Glass Pot & Cooldown: Cure in a dark UV-protected glass pot (or blind-wrapped jar) using a 2.5-3 hr blind timer, followed by a mandatory 45-60 min sealed cooldown before opening.\n" +
                 "• Mylar Warning: Ignore 'Cali' Mylar bag graphics—authentic packs are heat-sealed above the tear notch with separate thermal UID stickers."
         );
-
-        LinearLayout guideContent = new LinearLayout(this);
-        guideContent.setOrientation(LinearLayout.VERTICAL);
-        guideContent.addView(body);
-        guideContent.addView(body2);
-        scroll.addView(guideContent);
+        scroll.addView(body);
         root.addView(scroll);
 
         Button closeBtn = new Button(this);
